@@ -8,12 +8,21 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f4f6f9;
+      background: var(--bg);
+      color: var(--text);
       margin: 0;
       padding: 0;
       display: flex;
       flex-direction: column;
       align-items: center;
+    }
+    :root {
+      --bg: #f4f6f9;
+      --text: #000;
+    }
+    .dark-mode {
+      --bg: #111;
+      --text: #f4f4f4;
     }
     header {
       background: #007acc;
@@ -57,6 +66,12 @@
       color: #007acc;
       font-weight: bold;
     }
+    .toggle-dark {
+      margin-top: 10px;
+      cursor: pointer;
+      font-size: 14px;
+      color: #007acc;
+    }
   </style>
 </head>
 <body>
@@ -71,7 +86,8 @@
       <a href="#" id="whatsappShare" target="_blank">📤 Share on WhatsApp</a>
       <a href="#" id="telegramShare" target="_blank">📤 Share on Telegram</a>
     </div>
-    <div class="timestamp" id="countdownTimer">Next update in: 10s</div>
+    <div class="timestamp" id="countdownTimer">Next update in: 5s</div>
+    <div class="toggle-dark" onclick="toggleDarkMode()">🌘 Toggle Dark Mode</div>
   </div>
   <footer>
     Created by <a href="https://github.com/vhgkcreations" target="_blank">vhgkcreations</a> 💡
@@ -93,10 +109,11 @@
         fetchData("https://api.allorigins.win/raw?url=https://query1.finance.yahoo.com/v8/finance/chart/%5EDJI"),
         fetchData("https://api.allorigins.win/raw?url=https://query1.finance.yahoo.com/v8/finance/chart/%5ENSEI"),
         fetchData("https://api.allorigins.win/raw?url=https://query1.finance.yahoo.com/v8/finance/chart/CL%3DF"),
-        fetchData("https://api.allorigins.win/raw?url=https://query1.finance.yahoo.com/v8/finance/chart/USDINR%3DX")
+        fetchData("https://api.allorigins.win/raw?url=https://query1.finance.yahoo.com/v8/finance/chart/USDINR%3DX"),
+        fetchData("https://api.allorigins.win/raw?url=https://query1.finance.yahoo.com/v8/finance/chart/%5EINDIAVIX")
       ]);
 
-      const [dow, sgx, crude, usd] = results.map(result => {
+      const [dow, sgx, crude, usd, vix] = results.map(result => {
         if (!result || !result.chart || !result.chart.result || !result.chart.result[0]) return { error: true };
         const meta = result.chart.result[0].meta;
         const current = meta.regularMarketPrice;
@@ -109,6 +126,7 @@
         };
       });
 
+      const fiiDiiSummary = "FII: ₹+256 Cr, DII: ₹-134 Cr"; // Mock summary
       const reasons = [];
       let mood = "neutral";
 
@@ -138,6 +156,14 @@
         reasons.push("❌ USD/INR data not available");
       }
 
+      if (!vix.error) {
+        reasons.push(`📊 India VIX: ${vix.value} (${vix.change})`);
+      } else {
+        reasons.push("❌ India VIX not available");
+      }
+
+      reasons.push(`📋 FII/DII: ${fiiDiiSummary}`);
+
       const moodCard = document.getElementById("moodCard");
       moodCard.textContent =
         mood === "up"
@@ -150,19 +176,24 @@
 
       const reasonsEl = document.getElementById("reasons");
       const oldReasons = reasonsEl.innerText;
-      const newContent = reasons.map(r => `<div class="info">✅ ${r}</div>`).join("");
+      const newContent = reasons.map(r => `<div class=\"info\">✅ ${r}</div>`).join("");
       reasonsEl.innerHTML = newContent;
       if (oldReasons !== reasons.join("\n")) {
         reasonsEl.style.transition = "background-color 0.5s ease";
         reasonsEl.style.backgroundColor = "#d1ffd1";
         setTimeout(() => reasonsEl.style.backgroundColor = "transparent", 500);
       }
+
       const time = new Date().toLocaleString();
       document.getElementById("updatedTime").textContent = `Last updated: ${time}`;
 
       const message = encodeURIComponent(`Market Mood Tonight\n${time}\n${moodCard.textContent}\n` + reasons.join("\n"));
       document.getElementById("whatsappShare").href = `https://wa.me/?text=${message}`;
       document.getElementById("telegramShare").href = `https://t.me/share/url?text=${message}`;
+    }
+
+    function toggleDarkMode() {
+      document.body.classList.toggle("dark-mode");
     }
 
     updateMood();
