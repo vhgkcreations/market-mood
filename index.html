@@ -76,7 +76,7 @@
 </head>
 <body>
   <header>
-    <h1>📊 Market Mood Tonight</h1>
+    <h1 id="marketMoodTitle">📊 Market Mood</h1>
   </header>
   <div class="container">
     <div id="moodCard" class="card neutral">Loading market mood...</div>
@@ -196,6 +196,7 @@
       document.body.classList.toggle("dark-mode");
     }
 
+    setDynamicTitle();
     updateMood();
     let countdown = 5;
     setInterval(() => {
@@ -206,6 +207,15 @@
       }
       document.getElementById("countdownTimer").textContent = `Next update in: ${countdown}s`;
     }, 1000);
-  </script>
+  function setDynamicTitle() {
+  const now = new Date();
+  const hour = now.getHours();
+  let suffix = "";
+  if (hour < 12) suffix = "This Morning";
+  else if (hour < 17) suffix = "This Afternoon";
+  else suffix = "Tonight";
+  document.getElementById("marketMoodTitle").textContent = `📊 Market Mood ${suffix}`;
+}
+</script>
 </body>
 </html>
