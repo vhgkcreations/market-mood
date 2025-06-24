@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>📊 Market Mood Tonight</title>
-  <link rel="icon" href="https://fav.farm/📊" />
+  <link rel="icon" href="https://fav.farm/graph" />
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -71,9 +71,9 @@
       <a href="#" id="whatsappShare" target="_blank">📤 Share on WhatsApp</a>
       <a href="#" id="telegramShare" target="_blank">📤 Share on Telegram</a>
     </div>
-  <div class="timestamp" id="countdownTimer">Next update in: 5s</div>
-    </div>
-    <footer>
+    <div class="timestamp" id="countdownTimer">Next update in: 10s</div>
+  </div>
+  <footer>
     Created by <a href="https://github.com/vhgkcreations" target="_blank">vhgkcreations</a> 💡
   </footer>
 
@@ -150,10 +150,9 @@
 
       const reasonsEl = document.getElementById("reasons");
       const oldReasons = reasonsEl.innerText;
-      const newContent = reasons.map(r => `<div class=\"info\">✅ ${r}</div>`).join("");
+      const newContent = reasons.map(r => `<div class="info">✅ ${r}</div>`).join("");
       reasonsEl.innerHTML = newContent;
-      if (oldReasons !== reasons.join("
-")) {
+      if (oldReasons !== reasons.join("\n")) {
         reasonsEl.style.transition = "background-color 0.5s ease";
         reasonsEl.style.backgroundColor = "#d1ffd1";
         setTimeout(() => reasonsEl.style.backgroundColor = "transparent", 500);
@@ -167,12 +166,12 @@
     }
 
     updateMood();
-    let countdown = 60;
+    let countdown = 5;
     setInterval(() => {
       countdown--;
       if (countdown <= 0) {
         updateMood();
-        countdown = 60;
+        countdown = 5;
       }
       document.getElementById("countdownTimer").textContent = `Next update in: ${countdown}s`;
     }, 1000);
