@@ -148,7 +148,16 @@
 
       moodCard.className = `card ${mood}`;
 
-      document.getElementById("reasons").innerHTML = reasons.map(r => `<div class="info">✅ ${r}</div>`).join("");
+      const reasonsEl = document.getElementById("reasons");
+      const oldReasons = reasonsEl.innerText;
+      const newContent = reasons.map(r => `<div class=\"info\">✅ ${r}</div>`).join("");
+      reasonsEl.innerHTML = newContent;
+      if (oldReasons !== reasons.join("
+")) {
+        reasonsEl.style.transition = "background-color 0.5s ease";
+        reasonsEl.style.backgroundColor = "#d1ffd1";
+        setTimeout(() => reasonsEl.style.backgroundColor = "transparent", 500);
+      }
       const time = new Date().toLocaleString();
       document.getElementById("updatedTime").textContent = `Last updated: ${time}`;
 
@@ -158,12 +167,12 @@
     }
 
     updateMood();
-    let countdown = 5;
+    let countdown = 60;
     setInterval(() => {
       countdown--;
       if (countdown <= 0) {
         updateMood();
-        countdown = 5;
+        countdown = 60;
       }
       document.getElementById("countdownTimer").textContent = `Next update in: ${countdown}s`;
     }, 1000);
