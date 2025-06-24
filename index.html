@@ -126,13 +126,17 @@
         };
       });
 
-      const fiiDiiSummary = "FII: ₹+256 Cr, DII: ₹-134 Cr"; // Mock summary
+      const fiiDiiSummary = "FII: ₹+256 Cr, DII: ₹-134 Cr"; // Mock
+      let advice = "";
       const reasons = [];
       let mood = "neutral";
 
       if (!dow.error) {
         reasons.push(`📈 Dow: ${dow.value} (${dow.change})`);
         if (dow.direction !== "neutral") mood = dow.direction;
+        if (parseFloat(dow.change) > 100) advice = "📈 Prefer CE";
+        else if (parseFloat(dow.change) < -100) advice = "📉 Prefer PE";
+        else advice = "➖ Prefer Neutral / Hedge";
       } else {
         reasons.push("❌ Dow data not available");
       }
@@ -157,12 +161,15 @@
       }
 
       if (!vix.error) {
-        reasons.push(`📊 India VIX: ${vix.value} (${vix.change})`);
+        const vixArrow = vix.direction === 'up' ? '📈' : vix.direction === 'down' ? '📉' : '➖';
+        reasons.push(`📊 India VIX: ${vixArrow} ${vix.value} (${vix.change})`);
+        if (parseFloat(vix.value) > 15) reasons.push("⚠️ High volatility expected");
       } else {
         reasons.push("❌ India VIX not available");
       }
 
       reasons.push(`📋 FII/DII: ${fiiDiiSummary}`);
+      if (advice) reasons.push(`🧠 Advice: ${advice}`);
 
       const moodCard = document.getElementById("moodCard");
       moodCard.textContent =
@@ -176,7 +183,7 @@
 
       const reasonsEl = document.getElementById("reasons");
       const oldReasons = reasonsEl.innerText;
-      const newContent = reasons.map(r => `<div class=\"info\">✅ ${r}</div>`).join("");
+      const newContent = reasons.map(r => `<div class="info">✅ ${r}</div>`).join("");
       reasonsEl.innerHTML = newContent;
       if (oldReasons !== reasons.join("\n")) {
         reasonsEl.style.transition = "background-color 0.5s ease";
@@ -196,6 +203,13 @@
       document.body.classList.toggle("dark-mode");
     }
 
+    function setDynamicTitle() {
+      const now = new Date();
+      const hour = now.getHours();
+      let suffix = hour < 12 ? "This Morning" : hour < 17 ? "This Afternoon" : "Tonight";
+      document.getElementById("marketMoodTitle").textContent = `📊 Market Mood ${suffix}`;
+    }
+
     setDynamicTitle();
     updateMood();
     let countdown = 5;
@@ -207,15 +221,6 @@
       }
       document.getElementById("countdownTimer").textContent = `Next update in: ${countdown}s`;
     }, 1000);
-  function setDynamicTitle() {
-  const now = new Date();
-  const hour = now.getHours();
-  let suffix = "";
-  if (hour < 12) suffix = "This Morning";
-  else if (hour < 17) suffix = "This Afternoon";
-  else suffix = "Tonight";
-  document.getElementById("marketMoodTitle").textContent = `📊 Market Mood ${suffix}`;
-}
-</script>
+  </script>
 </body>
 </html>
