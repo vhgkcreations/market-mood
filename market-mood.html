@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Market Mood Tonight</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f2f5;
+      text-align: center;
+      padding: 20px;
+    }
+    .container {
+      background: white;
+      max-width: 600px;
+      margin: 0 auto;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    h1 {
+      font-size: 28px;
+      margin-bottom: 10px;
+    }
+    .status {
+      font-size: 24px;
+      font-weight: bold;
+      margin: 15px 0;
+    }
+    .up { color: green; }
+    .down { color: red; }
+    .neutral { color: orange; }
+    .info {
+      font-size: 16px;
+      margin: 5px 0;
+    }
+    .timestamp {
+      margin-top: 20px;
+      font-size: 14px;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📊 Market Mood Tonight</h1>
+    <div id="status" class="status neutral">Loading...</div>
+    <div id="reasons"></div>
+    <div class="timestamp" id="updatedTime">Fetching data...</div>
+  </div>
+
+  <script>
+    async function fetchDowData() {
+      try {
+        const res = await fetch("https://query1.finance.yahoo.com/v8/finance/chart/%5EDJI");
+        const data = await res.json();
+        const meta = data.chart.result[0].meta;
+        const current = meta.regularMarketPrice;
+        const previous = meta.previousClose;
+        const change = current - previous;
+
+        return {
+          source: "Dow Futures",
+          value: current.toFixed(2),
+          change: change.toFixed(2),
+          direction: change > 0 ? "up" : change < 0 ? "down" : "neutral"
+        };
+      } catch (e) {
+        return { source: "Dow Futures", error: "Failed to load" };
+      }
+    }
+
+    async function fetchCrudeData() {
+      try {
+        const res = await fetch("https://query1.finance.yahoo.com/v8/finance/chart/CL=F");
+        const data = await res.json();
+        const meta = data.chart.result[0].meta;
+        const current = meta.regularMarketPrice;
+        const previous = meta.previousClose;
+        const change = current - previous;
+
+        return {
+          source: "Crude Oil",
+          value: current.toFixed(2),
+          change: change.toFixed(2),
+          direction: change < 0 ? "positive" : "negative"
+        };
+      } catch (e) {
+        return { source: "Crude Oil", error: "Failed to load" };
+      }
+    }
+
+    async function updateMarketMood() {
+      const dow = await fetchDowData();
+      const crude = await fetchCrudeData();
+
+      const reasons = [];
+
+      let mood = "neutral";
+
+      if (dow.direction === "up") {
+        mood = "up";
+        reasons.push(`📈 Dow Futures up ${dow.change} to ${dow.value}`);
+      } else if (dow.direction === "down") {
+        mood = "down";
+        reasons.push(`📉 Dow Futures down ${dow.change} to ${dow.value}`);
+      } else {
+        reasons.push("➖ Dow Futures flat");
+      }
+
+      if (crude.direction === "positive") {
+        reasons.push("🛢 Crude Oil price falling — good for India");
+      } else if (crude.direction === "negative") {
+        reasons.push("🛢 Crude Oil price rising — caution");
+      }
+
+      // Update UI
+      const statusEl = document.getElementById("status");
+      const reasonsEl = document.getElementById("reasons");
+      const timeEl = document.getElementById("updatedTime");
+
+      statusEl.textContent =
+        mood === "up" ? "📈 Likely to Open Higher"
+        : mood === "down" ? "📉 Likely to Open Lower"
+        : "➖ Sideways / Neutral";
+
+      statusEl.className = `status ${mood}`;
+      reasonsEl.innerHTML = reasons.map(r => `<div class="info">✅ ${r}</div>`).join("");
+      timeEl.textContent = `Last updated: ${new Date().toLocaleString()}`;
+    }
+
+    updateMarketMood();
+  </script>
+</body>
+</html>
+<script>
+  async function fetchYahooPrice(symbol, label) {
+    try {
+      const res = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}`);
+      const data = await res.json();
+      const meta = data.chart.result[0].meta;
+      const current = meta.regularMarketPrice;
+      const previous = meta.previousClose;
+      const change = current - previous;
+      return {
+        source: label,
+        value: current.toFixed(2),
+        change: change.toFixed(2),
+        direction: change > 0 ? "up" : change < 0 ? "down" : "neutral"
+      };
+    } catch (e) {
+      return { source: label, error: "Failed to load" };
+    }
+  }
+
+  async function updateMarketMood() {
+    const dow = await fetchYahooPrice("^DJI", "Dow Futures");
+    const crude = await fetchYahooPrice("CL=F", "Crude Oil");
+    const sgx = await fetchYahooPrice("^NSEI", "SGX Nifty (GIFT)");
+
+    const reasons = [];
+    let mood = "neutral";
+
+    if (dow.direction === "up") {
+      reasons.push(`📈 Dow up ${dow.change} → ${dow.value}`);
+      mood = "up";
+    } else if (dow.direction === "down") {
+      reasons.push(`📉 Dow down ${dow.change} → ${dow.value}`);
+      mood = "down";
+    } else {
+      reasons.push("➖ Dow Futures flat");
+    }
+
+    if (sgx.direction === "up") {
+      reasons.push(`💹 SGX Nifty up ${sgx.change} → ${sgx.value}`);
+      if (mood === "neutral") mood = "up";
+    } else if (sgx.direction === "down") {
+      reasons.push(`📉 SGX Nifty down ${sgx.change} → ${sgx.value}`);
+      if (mood === "neutral") mood = "down";
+    }
+
+    if (crude.direction === "positive") {
+      reasons.push("🛢 Crude falling — good for India");
+    } else if (crude.direction === "negative") {
+      reasons.push("🛢 Crude rising — caution for India");
+    }
+
+    document.getElementById("status").textContent =
+      mood === "up" ? "📈 Likely to Open Higher"
+      : mood === "down" ? "📉 Likely to Open Lower"
+      : "➖ Sideways / Neutral";
+    document.getElementById("status").className = `status ${mood}`;
+    document.getElementById("reasons").innerHTML = reasons
+      .map(r => `<div class="info">✅ ${r}</div>`)
+      .join("");
+    document.getElementById("updatedTime").textContent =
+      "Last updated: " + new Date().toLocaleString();
+  }
+
+  // ✅ Auto-refresh every 5 minutes
+  updateMarketMood();
+  setInterval(updateMarketMood, 300000); // 300,000 ms = 5 min
+</script>
