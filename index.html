@@ -2,203 +2,158 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Market Mood Tonight</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>📊 Market Mood Tonight</title>
+  <link rel="icon" href="https://fav.farm/📊" />
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f0f2f5;
+      background: #f4f6f9;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    header {
+      background: #007acc;
+      color: white;
+      padding: 1rem;
+      width: 100%;
       text-align: center;
-      padding: 20px;
     }
     .container {
-      background: white;
       max-width: 600px;
-      margin: 0 auto;
-      border-radius: 12px;
+      background: white;
+      margin: 20px;
       padding: 20px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
-    h1 {
-      font-size: 28px;
-      margin-bottom: 10px;
-    }
-    .status {
-      font-size: 24px;
-      font-weight: bold;
-      margin: 15px 0;
-    }
-    .up { color: green; }
-    .down { color: red; }
-    .neutral { color: orange; }
-    .info {
+    .card {
+      border-radius: 10px;
+      padding: 10px;
+      margin: 10px 0;
       font-size: 16px;
-      margin: 5px 0;
+      color: white;
     }
+    .up { background-color: #28a745; }
+    .down { background-color: #dc3545; }
+    .neutral { background-color: #ffc107; color: #333; }
+    .info { margin: 10px 0; }
     .timestamp {
-      margin-top: 20px;
       font-size: 14px;
-      color: #555;
+      color: #666;
+      margin-top: 10px;
+    }
+    footer {
+      font-size: 14px;
+      margin: 20px;
+      color: #888;
+    }
+    .share-buttons a {
+      margin: 0 10px;
+      text-decoration: none;
+      color: #007acc;
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
-  <div class="container">
+  <header>
     <h1>📊 Market Mood Tonight</h1>
-    <div id="status" class="status neutral">Loading...</div>
+  </header>
+  <div class="container">
+    <div id="moodCard" class="card neutral">Loading market mood...</div>
     <div id="reasons"></div>
-    <div class="timestamp" id="updatedTime">Fetching data...</div>
+    <div class="timestamp" id="updatedTime">Last updated: --</div>
+    <div class="share-buttons">
+      <a href="#" id="whatsappShare" target="_blank">📤 Share on WhatsApp</a>
+      <a href="#" id="telegramShare" target="_blank">📤 Share on Telegram</a>
+    </div>
   </div>
+  <footer>
+    Created by <a href="https://github.com/vhgkcreations" target="_blank">vhgkcreations</a> 💡
+  </footer>
 
   <script>
-    async function fetchDowData() {
+    async function fetchYahoo(symbol) {
       try {
-        const res = await fetch("https://query1.finance.yahoo.com/v8/finance/chart/%5EDJI");
+        const res = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}`);
         const data = await res.json();
         const meta = data.chart.result[0].meta;
         const current = meta.regularMarketPrice;
         const previous = meta.previousClose;
         const change = current - previous;
-
         return {
-          source: "Dow Futures",
           value: current.toFixed(2),
           change: change.toFixed(2),
           direction: change > 0 ? "up" : change < 0 ? "down" : "neutral"
         };
-      } catch (e) {
-        return { source: "Dow Futures", error: "Failed to load" };
+      } catch (err) {
+        return { error: true };
       }
     }
 
-    async function fetchCrudeData() {
-      try {
-        const res = await fetch("https://query1.finance.yahoo.com/v8/finance/chart/CL=F");
-        const data = await res.json();
-        const meta = data.chart.result[0].meta;
-        const current = meta.regularMarketPrice;
-        const previous = meta.previousClose;
-        const change = current - previous;
-
-        return {
-          source: "Crude Oil",
-          value: current.toFixed(2),
-          change: change.toFixed(2),
-          direction: change < 0 ? "positive" : "negative"
-        };
-      } catch (e) {
-        return { source: "Crude Oil", error: "Failed to load" };
-      }
-    }
-
-    async function updateMarketMood() {
-      const dow = await fetchDowData();
-      const crude = await fetchCrudeData();
+    async function updateMood() {
+      const [dow, sgx, crude, usd] = await Promise.all([
+        fetchYahoo("^DJI"),
+        fetchYahoo("^NSEI"),
+        fetchYahoo("CL=F"),
+        fetchYahoo("USDINR=X")
+      ]);
 
       const reasons = [];
-
       let mood = "neutral";
 
-      if (dow.direction === "up") {
-        mood = "up";
-        reasons.push(`📈 Dow Futures up ${dow.change} to ${dow.value}`);
-      } else if (dow.direction === "down") {
-        mood = "down";
-        reasons.push(`📉 Dow Futures down ${dow.change} to ${dow.value}`);
+      if (dow && !dow.error) {
+        reasons.push(`📈 Dow: ${dow.value} (${dow.change})`);
+        if (dow.direction !== "neutral") mood = dow.direction;
       } else {
-        reasons.push("➖ Dow Futures flat");
+        reasons.push("❌ Dow data not available");
       }
 
-      if (crude.direction === "positive") {
-        reasons.push("🛢 Crude Oil price falling — good for India");
-      } else if (crude.direction === "negative") {
-        reasons.push("🛢 Crude Oil price rising — caution");
+      if (sgx && !sgx.error) {
+        reasons.push(`💹 SGX Nifty: ${sgx.value} (${sgx.change})`);
+        if (mood === "neutral" && sgx.direction !== "neutral") mood = sgx.direction;
+      } else {
+        reasons.push("❌ SGX Nifty data not available");
       }
 
-      // Update UI
-      const statusEl = document.getElementById("status");
-      const reasonsEl = document.getElementById("reasons");
-      const timeEl = document.getElementById("updatedTime");
+      if (crude && !crude.error) {
+        reasons.push(`🛢 Crude Oil: ${crude.value} (${crude.change})`);
+      } else {
+        reasons.push("❌ Crude data not available");
+      }
 
-      statusEl.textContent =
-        mood === "up" ? "📈 Likely to Open Higher"
-        : mood === "down" ? "📉 Likely to Open Lower"
-        : "➖ Sideways / Neutral";
+      if (usd && !usd.error) {
+        reasons.push(`💱 USD/INR: ₹${usd.value} (${usd.change})`);
+      } else {
+        reasons.push("❌ USD/INR data not available");
+      }
 
-      statusEl.className = `status ${mood}`;
-      reasonsEl.innerHTML = reasons.map(r => `<div class="info">✅ ${r}</div>`).join("");
-      timeEl.textContent = `Last updated: ${new Date().toLocaleString()}`;
+      const moodCard = document.getElementById("moodCard");
+      moodCard.textContent =
+        mood === "up"
+          ? "📈 Market likely to open higher"
+          : mood === "down"
+          ? "📉 Market likely to open lower"
+          : "➖ Sideways or Neutral mood";
+
+      moodCard.className = `card ${mood}`;
+
+      document.getElementById("reasons").innerHTML = reasons.map(r => `<div class="info">✅ ${r}</div>`).join("");
+      const time = new Date().toLocaleString();
+      document.getElementById("updatedTime").textContent = `Last updated: ${time}`;
+
+      // Share message
+      const message = `Market Mood Tonight (%0A${time}%0A)\n${moodCard.textContent}%0A${reasons.join("%0A")}`;
+      document.getElementById("whatsappShare").href = `https://wa.me/?text=${message}`;
+      document.getElementById("telegramShare").href = `https://t.me/share/url?text=${message}`;
     }
 
-    updateMarketMood();
+    updateMood();
+    setInterval(updateMood, 300000); // Refresh every 5 min
   </script>
 </body>
 </html>
-<script>
-  async function fetchYahooPrice(symbol, label) {
-    try {
-      const res = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}`);
-      const data = await res.json();
-      const meta = data.chart.result[0].meta;
-      const current = meta.regularMarketPrice;
-      const previous = meta.previousClose;
-      const change = current - previous;
-      return {
-        source: label,
-        value: current.toFixed(2),
-        change: change.toFixed(2),
-        direction: change > 0 ? "up" : change < 0 ? "down" : "neutral"
-      };
-    } catch (e) {
-      return { source: label, error: "Failed to load" };
-    }
-  }
-
-  async function updateMarketMood() {
-    const dow = await fetchYahooPrice("^DJI", "Dow Futures");
-    const crude = await fetchYahooPrice("CL=F", "Crude Oil");
-    const sgx = await fetchYahooPrice("^NSEI", "SGX Nifty (GIFT)");
-
-    const reasons = [];
-    let mood = "neutral";
-
-    if (dow.direction === "up") {
-      reasons.push(`📈 Dow up ${dow.change} → ${dow.value}`);
-      mood = "up";
-    } else if (dow.direction === "down") {
-      reasons.push(`📉 Dow down ${dow.change} → ${dow.value}`);
-      mood = "down";
-    } else {
-      reasons.push("➖ Dow Futures flat");
-    }
-
-    if (sgx.direction === "up") {
-      reasons.push(`💹 SGX Nifty up ${sgx.change} → ${sgx.value}`);
-      if (mood === "neutral") mood = "up";
-    } else if (sgx.direction === "down") {
-      reasons.push(`📉 SGX Nifty down ${sgx.change} → ${sgx.value}`);
-      if (mood === "neutral") mood = "down";
-    }
-
-    if (crude.direction === "positive") {
-      reasons.push("🛢 Crude falling — good for India");
-    } else if (crude.direction === "negative") {
-      reasons.push("🛢 Crude rising — caution for India");
-    }
-
-    document.getElementById("status").textContent =
-      mood === "up" ? "📈 Likely to Open Higher"
-      : mood === "down" ? "📉 Likely to Open Lower"
-      : "➖ Sideways / Neutral";
-    document.getElementById("status").className = `status ${mood}`;
-    document.getElementById("reasons").innerHTML = reasons
-      .map(r => `<div class="info">✅ ${r}</div>`)
-      .join("");
-    document.getElementById("updatedTime").textContent =
-      "Last updated: " + new Date().toLocaleString();
-  }
-
-  // ✅ Auto-refresh every 5 minutes
-  updateMarketMood();
-  setInterval(updateMarketMood, 300000); // 300,000 ms = 5 min
-</script>
