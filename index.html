@@ -71,8 +71,9 @@
       <a href="#" id="whatsappShare" target="_blank">📤 Share on WhatsApp</a>
       <a href="#" id="telegramShare" target="_blank">📤 Share on Telegram</a>
     </div>
-  </div>
-  <footer>
+  <div class="timestamp" id="countdownTimer">Next update in: 5s</div>
+    </div>
+    <footer>
     Created by <a href="https://github.com/vhgkcreations" target="_blank">vhgkcreations</a> 💡
   </footer>
 
@@ -157,7 +158,15 @@
     }
 
     updateMood();
-    setInterval(updateMood, 1000);
+    let countdown = 5;
+    setInterval(() => {
+      countdown--;
+      if (countdown <= 0) {
+        updateMood();
+        countdown = 5;
+      }
+      document.getElementById("countdownTimer").textContent = `Next update in: ${countdown}s`;
+    }, 1000);
   </script>
 </body>
 </html>
