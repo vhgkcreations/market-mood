@@ -56,6 +56,12 @@
       color: #666;
       margin-top: 10px;
     }
+    .share-buttons a {
+      margin: 0 10px;
+      text-decoration: none;
+      color: #007acc;
+      font-weight: bold;
+    }
     .toggle-dark {
       margin-top: 10px;
       cursor: pointer;
@@ -88,107 +94,99 @@
     <div id="reasons"></div>
     <div class="info">
       <strong>Enter Manual FII/DII Data:</strong><br/>
-      FII Cash: <input type="text" id="fiiCash" placeholder="e.g. +1250" />
-      FII Index Futures: <input type="text" id="fiiFut" placeholder="e.g. -230" />
-      FII Index Options: <input type="text" id="fiiOpt" placeholder="e.g. +1420" />
-      FII Stock Futures: <input type="text" id="fiiStock" placeholder="e.g. -320" />
-      DII Cash: <input type="text" id="diiCash" placeholder="e.g. +400" />
+      FII Cash: <input type="text" id="fiiCash" placeholder="+1250 or -230" />
+      FII Index Futures: <input type="text" id="fiiFut" placeholder="+100 or -50" />
+      FII Index Options: <input type="text" id="fiiOpt" placeholder="+500 or -100" />
+      FII Stock Futures: <input type="text" id="fiiStock" placeholder="+120 or -200" />
+      FII Stock Options: <input type="text" id="fiiOptStock" placeholder="+300 or -100" />
+      DII Cash: <input type="text" id="diiCash" placeholder="+400 or -250" />
+      <button onclick="updateMood()">Update Market Mood</button>
     </div>
-    <button onclick="updateMood()">Update Market Mood</button>
     <div class="timestamp" id="updatedTime">Last updated: --</div>
+    <div class="timestamp" id="countdownTimer">Next update in: 30s</div>
     <div class="toggle-dark" onclick="toggleDarkMode()">🌘 Toggle Dark Mode</div>
   </div>
+
   <script>
-    async function fetchLiveData() {
-      const urls = {
-        dow: "https://query1.finance.yahoo.com/v8/finance/chart/%5EDJI",
-        nifty: "https://query1.finance.yahoo.com/v8/finance/chart/%5ENSEI",
-        crude: "https://query1.finance.yahoo.com/v8/finance/chart/CL%3DF",
-        usd: "https://query1.finance.yahoo.com/v8/finance/chart/USDINR%3DX",
-        vix: "https://query1.finance.yahoo.com/v8/finance/chart/%5EINDIAVIX"
-      };
-      const proxy = "https://api.allorigins.win/raw?url=";
+    const marketData = {
+      dow: { value: 43089.02, change: 507.24 },
+      nifty: { value: 25194.00, change: 126.95 },
+      crude: { value: 65.25, change: 0.88 },
+      usd: { value: 85.95, change: 0.06 },
+      vix: { value: 13.27, change: -0.37 }
+    };
 
-      const fetchChart = async (key) => {
-        try {
-          const res = await fetch(proxy + urls[key]);
-          const data = await res.json();
-          const meta = data.chart.result[0].meta;
-          const price = meta.regularMarketPrice;
-          const prev = meta.previousClose;
-          return {
-            value: price.toFixed(2),
-            change: (price - prev).toFixed(2)
-          };
-        } catch {
-          return { value: "N/A", change: "N/A" };
-        }
-      };
-
-      return {
-        dow: await fetchChart("dow"),
-        nifty: await fetchChart("nifty"),
-        crude: await fetchChart("crude"),
-        usd: await fetchChart("usd"),
-        vix: await fetchChart("vix")
-      };
+    function parseValue(val) {
+      val = val.trim();
+      if (val.startsWith('-')) return parseFloat(val);
+      return parseFloat(val.replace('+', '')) || 0;
     }
 
     function toggleDarkMode() {
       document.body.classList.toggle("dark-mode");
     }
 
-    async function updateMood() {
-      const marketData = await fetchLiveData();
-      const fiiCash = parseFloat(document.getElementById("fiiCash").value) || 0;
-      const fiiFut = parseFloat(document.getElementById("fiiFut").value) || 0;
-      const fiiOpt = parseFloat(document.getElementById("fiiOpt").value) || 0;
-      const fiiStock = parseFloat(document.getElementById("fiiStock").value) || 0;
-      const diiCash = parseFloat(document.getElementById("diiCash").value) || 0;
+    function updateMood() {
+      const fiiCash = parseValue(document.getElementById("fiiCash").value);
+      const fiiFut = parseValue(document.getElementById("fiiFut").value);
+      const fiiOpt = parseValue(document.getElementById("fiiOpt").value);
+      const fiiStock = parseValue(document.getElementById("fiiStock").value);
+      const fiiOptStock = parseValue(document.getElementById("fiiOptStock").value);
+      const diiCash = parseValue(document.getElementById("diiCash").value);
 
+      const fiiTotal = fiiCash + fiiFut + fiiOpt + fiiStock + fiiOptStock;
       const reasons = [];
       let mood = "neutral";
       let advice = "➖ Prefer Neutral / Hedge";
 
-      if (parseFloat(marketData.dow.change) > 100) mood = "up";
-      else if (parseFloat(marketData.dow.change) < -100) mood = "down";
+      if (marketData.dow.change > 100) mood = "up";
+      else if (marketData.dow.change < -100) mood = "down";
 
-      const fiiTotal = fiiCash + fiiFut + fiiOpt;
       if (fiiTotal > 1000) mood = "up";
       else if (fiiTotal < -1000) mood = "down";
 
       if (mood === "up") advice = "📈 Prefer CE";
       else if (mood === "down") advice = "📉 Prefer PE";
 
-      const base = Math.round(parseFloat(marketData.nifty.value) / 50) * 50;
+      const base = Math.round(marketData.nifty.value / 50) * 50;
       const strike = mood === "up" ? base + 100 : mood === "down" ? base - 100 : base;
       const strikeMsg = `🎯 Suggested Strike: ${strike} ${mood === "up" ? 'CE' : mood === "down" ? 'PE' : 'Hedge'}`;
 
       reasons.push(`📈 Dow: ${marketData.dow.value} (${marketData.dow.change})`);
-      reasons.push(`📉 Nifty: ${marketData.nifty.value} (${marketData.nifty.change})`);
-      reasons.push(`💢 Crude Oil: ${marketData.crude.value} (${marketData.crude.change})`);
+      reasons.push(`💹 Nifty: ${marketData.nifty.value} (${marketData.nifty.change})`);
+      reasons.push(`🛢 Crude Oil: ${marketData.crude.value} (${marketData.crude.change})`);
       reasons.push(`💱 USD/INR: ₹${marketData.usd.value} (${marketData.usd.change})`);
       reasons.push(`📊 India VIX: ${marketData.vix.value} (${marketData.vix.change})`);
-      reasons.push(`📋 FII/DII: FII Cash: ₹${fiiCash}, Futures: ₹${fiiFut}, Options: ₹${fiiOpt}, Stock: ₹${fiiStock}, DII: ₹${diiCash}`);
+      reasons.push(`📋 FII/DII: FII Cash ₹${fiiCash}, Index Fut ₹${fiiFut}, Index Opt ₹${fiiOpt}, Stock Fut ₹${fiiStock}, Stock Opt ₹${fiiOptStock}, DII ₹${diiCash}`);
+      reasons.push(`📦 Total FII: ₹${fiiTotal}`);
       reasons.push(`🧠 Advice: ${advice}`);
       reasons.push(strikeMsg);
 
-      const moodCard = document.getElementById("moodCard");
-      moodCard.textContent =
+      document.getElementById("moodCard").textContent =
         mood === "up" ? "📈 Market likely to open higher" :
         mood === "down" ? "📉 Market likely to open lower" :
         "➖ Sideways or Neutral mood";
-      moodCard.className = `card ${mood}`;
 
-      const reasonsEl = document.getElementById("reasons");
-      reasonsEl.innerHTML = reasons.map(r => `<div class="info">✅ ${r}</div>`).join("");
+      document.getElementById("moodCard").className = `card ${mood}`;
 
-      const time = new Date().toLocaleString();
-      document.getElementById("updatedTime").textContent = `Last updated: ${time}`;
+      document.getElementById("reasons").innerHTML = reasons.map(r => `<div class="info">✅ ${r}</div>`).join("");
+
+      document.getElementById("updatedTime").textContent = `Last updated: ${new Date().toLocaleString()}`;
     }
 
+    // Initial call
     updateMood();
-    setInterval(updateMood, 30000);
+
+    // Auto-refresh logic
+    let countdown = 30;
+    setInterval(() => {
+      countdown--;
+      if (countdown <= 0) {
+        updateMood();
+        countdown = 30;
+      }
+      document.getElementById("countdownTimer").textContent = `Next update in: ${countdown}s`;
+    }, 1000);
   </script>
 </body>
 </html>
