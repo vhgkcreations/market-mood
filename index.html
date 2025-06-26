@@ -29,6 +29,15 @@
       color: white;
       padding: 1rem;
       text-align: center;
+      position: relative;
+    }
+
+    #datetime {
+      position: absolute;
+      right: 15px;
+      top: 15px;
+      font-size: 0.9rem;
+      color: #fffacd;
     }
 
     .container {
@@ -120,6 +129,7 @@
 <body>
   <header>
     <h1>📊 Market Mood Advisor</h1>
+    <div id="datetime">--</div>
   </header>
 
   <div class="ticker"><span id="tickerText"></span></div>
@@ -133,7 +143,7 @@
       <input id="nifty" placeholder="Nifty 50 Level (e.g. 25100)">
       <input id="niftyChange" placeholder="Nifty Change (e.g. +100 or -50)">
       <input id="vix" placeholder="India VIX Change (e.g. -0.35)">
-      <input id="fiiCash" placeholder="FII Cash Change (e.g. +1000 or -500)">
+      <input id="fiiCash" placeholder="FII Cash Change">
       <input id="fiiFut" placeholder="FII Index Futures Change">
       <input id="fiiOpt" placeholder="FII Index Options Change">
       <button onclick="analyze()">Analyze</button>
@@ -162,7 +172,7 @@
         vix: document.getElementById("vix").value,
         fiiCash: document.getElementById("fiiCash").value,
         fiiFut: document.getElementById("fiiFut").value,
-        fiiOpt: document.getElementById("fiiOpt").value
+        fiiOpt: document.getElementById("fiiOpt").value,
       };
 
       const dow = parse(inputs.dow);
@@ -191,13 +201,16 @@
       const logic = [];
       logic.push(`✅ Dow Jones Change: ${dow}`);
       logic.push(`✅ Nifty: ${nifty} (Change: ${niftyChange})`);
-      logic.push(`✅ VIX: ${vix}`);
+      logic.push(`✅ VIX Change: ${vix}`);
       logic.push(`✅ FII Total Activity: ${fiiTotal}`);
-      logic.push(`📌 Mood based on: Dow, FII Total, VIX`);
+      logic.push(`📌 Based on: Dow, FII, VIX`);
 
       document.getElementById("logic").innerHTML = logic.map(l => `<div>➤ ${l}</div>`).join('');
 
-      const tickerParts = Object.entries(inputs).map(([k, v]) => `<b>${k.replace(/([a-z])([A-Z])/g, '$1 $2')}: ${v}</b>`);
+      const tickerParts = Object.entries(inputs).map(([k, v]) => {
+        const label = k.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase());
+        return `<b>${label}: ${v}</b>`;
+      });
       document.getElementById("tickerText").innerHTML = tickerParts.join('');
     }
 
@@ -214,7 +227,17 @@
       document.body.classList.toggle("dark-mode");
     }
 
+    function updateDateTime() {
+      const now = new Date();
+      const formatted = now.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+      document.getElementById("datetime").textContent = formatted;
+    }
+
     setInterval(analyze, 30000); // auto refresh every 30s
+    setInterval(updateDateTime, 1000); // update clock every second
+
+    // Initial call
+    updateDateTime();
   </script>
 </body>
 </html>
