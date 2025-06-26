@@ -105,6 +105,7 @@
     .ticker span b {
       margin-right: 30px;
       display: inline-block;
+      text-transform: capitalize;
     }
 
     .ticker span b:nth-child(odd) { color: #0f0; }
@@ -128,13 +129,13 @@
   <div class="container">
     <div class="input-panel">
       <h3>🔹 Enter Market Data</h3>
-      <input id="dow" placeholder="Dow Jones 🔺 Change (e.g. +150 or -100)">
-      <input id="nifty" placeholder="Nifty 50 📉 Value (e.g. 23450)">
-      <input id="niftyChange" placeholder="Nifty 50 🔺 Change (e.g. +120 or -80)">
-      <input id="vix" placeholder="India VIX 🔺 Change (e.g. -0.35)">
-      <input id="fiiCash" placeholder="FII Cash 🔺 Change (e.g. +1000 or -500)">
-      <input id="fiiFut" placeholder="FII Index Futures 🔺 Change (e.g. +300 or -200)">
-      <input id="fiiOpt" placeholder="FII Index Options 🔺 Change (e.g. +900 or -500)">
+      <input id="dow" placeholder="Dow Jones Change (e.g. +150 or -100)">
+      <input id="nifty" placeholder="Nifty 50 Level (e.g. 25100)">
+      <input id="niftyChange" placeholder="Nifty Change (e.g. +100 or -50)">
+      <input id="vix" placeholder="India VIX Change (e.g. -0.35)">
+      <input id="fiiCash" placeholder="FII Cash Change (e.g. +1000 or -500)">
+      <input id="fiiFut" placeholder="FII Index Futures Change">
+      <input id="fiiOpt" placeholder="FII Index Options Change">
       <button onclick="analyze()">Analyze</button>
       <button onclick="resetFields()">Reset</button>
     </div>
@@ -185,19 +186,18 @@
       document.getElementById("mood").textContent = `Market Mood: ${mood.toUpperCase()}`;
       document.getElementById("advice").textContent = `CE/PE Advice: ${advice}`;
       document.getElementById("strike").textContent = `Suggested Strike: ${strike}`;
-
       document.getElementById("mood").className = `result ${mood}`;
 
       const logic = [];
       logic.push(`✅ Dow Jones Change: ${dow}`);
       logic.push(`✅ Nifty: ${nifty} (Change: ${niftyChange})`);
-      logic.push(`✅ VIX Change: ${vix}`);
+      logic.push(`✅ VIX: ${vix}`);
       logic.push(`✅ FII Total Activity: ${fiiTotal}`);
       logic.push(`📌 Mood based on: Dow, FII Total, VIX`);
 
       document.getElementById("logic").innerHTML = logic.map(l => `<div>➤ ${l}</div>`).join('');
 
-      const tickerParts = Object.entries(inputs).map(([k, v]) => `<b>${k.toUpperCase()}: ${v}</b>`);
+      const tickerParts = Object.entries(inputs).map(([k, v]) => `<b>${k.replace(/([a-z])([A-Z])/g, '$1 $2')}: ${v}</b>`);
       document.getElementById("tickerText").innerHTML = tickerParts.join('');
     }
 
@@ -214,7 +214,7 @@
       document.body.classList.toggle("dark-mode");
     }
 
-    setInterval(analyze, 30000);
+    setInterval(analyze, 30000); // auto refresh every 30s
   </script>
 </body>
 </html>
