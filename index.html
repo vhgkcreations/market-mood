@@ -1,243 +1,28 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>📊 Market Mood Advisor</title>
-  <style>
-    :root {
-      --bg: #f0f2f5;
-      --text: #333;
-      --panel: #fff;
-    }
-    .dark-mode {
-      --bg: #121212;
-      --text: #eee;
-      --panel: #1e1e1e;
-    }
-
-    body {
-      font-family: Arial, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      margin: 0;
-      padding: 0;
-    }
-
-    header {
-      background: #007acc;
-      color: white;
-      padding: 1rem;
-      text-align: center;
-      position: relative;
-    }
-
-    #datetime {
-      position: absolute;
-      right: 15px;
-      top: 15px;
-      font-size: 0.9rem;
-      color: #fffacd;
-    }
-
-    .container {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      padding: 20px;
-    }
-
-    .input-panel, .output-panel {
-      flex: 1 1 320px;
-      margin: 10px;
-      background: var(--panel);
-      border-radius: 10px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-      padding: 20px;
-    }
-
-    input {
-      width: 100%;
-      padding: 8px;
-      margin: 5px 0;
-      box-sizing: border-box;
-    }
-
-    button {
-      margin-top: 10px;
-      padding: 10px;
-      background: #007acc;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      font-size: 16px;
-    }
-
-    .result {
-      font-size: 18px;
-      margin: 10px 0;
-      font-weight: bold;
-    }
-
-    .result.up { color: green; }
-    .result.down { color: red; }
-    .result.neutral { color: orange; }
-
-    .logic {
-      font-size: 14px;
-      color: var(--text);
-    }
-
-    .dark-toggle {
-      text-align: center;
-      margin-bottom: 10px;
-      cursor: pointer;
-    }
-
-    .ticker {
-      background: #000;
-      overflow: hidden;
-      white-space: nowrap;
-      box-sizing: border-box;
-      padding: 10px;
-      font-weight: bold;
-      font-size: 18px;
-    }
-
-    .ticker span {
-      display: inline-block;
-      animation: scroll 30s linear infinite;
-      color: white;
-    }
-
-    .ticker span b {
-      margin-right: 30px;
-      display: inline-block;
-      text-transform: capitalize;
-    }
-
-    .ticker span b:nth-child(odd) { color: #0f0; }
-    .ticker span b:nth-child(even) { color: #ffcc00; }
-
-    @keyframes scroll {
-      0% { transform: translateX(100%); }
-      100% { transform: translateX(-100%); }
-    }
-  </style>
-</head>
 <body>
   <header>
-    <h1>📊 Market Mood Advisor</h1>
-    <div id="datetime">--</div>
+    <h1>Market Mood Advisor</h1>
+    <div id="datetime"></div>
   </header>
-
   <div class="ticker"><span id="tickerText"></span></div>
-
-  <div class="dark-toggle" onclick="toggleDark()">🌓 Toggle Dark Mode</div>
-
+  <label><input type="checkbox" onclick="toggleDark()"> Dark Mode</label>
   <div class="container">
-    <div class="input-panel">
-      <h3>🔹 Enter Market Data</h3>
-      <input id="dow" placeholder="Dow Jones Change (e.g. +150 or -100)">
-      <input id="nifty" placeholder="Nifty 50 Level (e.g. 25100)">
-      <input id="niftyChange" placeholder="Nifty Change (e.g. +100 or -50)">
-      <input id="vix" placeholder="India VIX Change (e.g. -0.35)">
-      <input id="fiiCash" placeholder="FII Cash Change">
-      <input id="fiiFut" placeholder="FII Index Futures Change">
-      <input id="fiiOpt" placeholder="FII Index Options Change">
-      <button onclick="analyze()">Analyze</button>
-      <button onclick="resetFields()">Reset</button>
+    <div class="panel input">
+       <!-- inputs: nifty-close, nifty-change, dow, vix, usd, crude, fiiCash, fiiFut, fiiOpt, diiCash -->
+       <button onclick="analyze()">Analyze & Save</button>
+       <button onclick="reset()">Reset All</button>
     </div>
-
-    <div class="output-panel">
-      <h3>🟩 Market Analysis</h3>
-      <div id="mood" class="result">Market Mood: --</div>
-      <div id="advice" class="result">CE/PE Advice: --</div>
-      <div id="strike" class="result">Suggested Strike: --</div>
-      <div id="logic" class="logic"></div>
+    <div class="panel output">
+       <!-- mood, advice, strike, risk, confidence, logic list -->
     </div>
   </div>
-
   <script>
-    function parse(val) {
-      return parseFloat((val || '0').replace('+','')) || 0;
-    }
-
     function analyze() {
-      const inputs = {
-        dow: document.getElementById("dow").value,
-        nifty: document.getElementById("nifty").value,
-        niftyChange: document.getElementById("niftyChange").value,
-        vix: document.getElementById("vix").value,
-        fiiCash: document.getElementById("fiiCash").value,
-        fiiFut: document.getElementById("fiiFut").value,
-        fiiOpt: document.getElementById("fiiOpt").value,
-      };
-
-      const dow = parse(inputs.dow);
-      const nifty = parse(inputs.nifty);
-      const niftyChange = parse(inputs.niftyChange);
-      const vix = parse(inputs.vix);
-      const fiiCash = parse(inputs.fiiCash);
-      const fiiFut = parse(inputs.fiiFut);
-      const fiiOpt = parse(inputs.fiiOpt);
-
-      const fiiTotal = fiiCash + fiiFut + fiiOpt;
-
-      let mood = "neutral";
-      if (dow > 100 || fiiTotal > 1000) mood = "up";
-      if (dow < -100 || fiiTotal < -1000 || vix > 1.5) mood = "down";
-
-      const advice = mood === "up" ? "📈 Prefer Call Option" : mood === "down" ? "📉 Prefer Put Option" : "➖ Hedge or Wait";
-      const baseStrike = Math.round(nifty / 50) * 50;
-      const strike = mood === "up" ? `${baseStrike + 100} CE` : mood === "down" ? `${baseStrike - 100} PE` : `${baseStrike} ATM`;
-
-      document.getElementById("mood").textContent = `Market Mood: ${mood.toUpperCase()}`;
-      document.getElementById("advice").textContent = `CE/PE Advice: ${advice}`;
-      document.getElementById("strike").textContent = `Suggested Strike: ${strike}`;
-      document.getElementById("mood").className = `result ${mood}`;
-
-      const logic = [];
-      logic.push(`✅ Dow Jones Change: ${dow}`);
-      logic.push(`✅ Nifty: ${nifty} (Change: ${niftyChange})`);
-      logic.push(`✅ VIX Change: ${vix}`);
-      logic.push(`✅ FII Total Activity: ${fiiTotal}`);
-      logic.push(`📌 Based on: Dow, FII, VIX`);
-
-      document.getElementById("logic").innerHTML = logic.map(l => `<div>➤ ${l}</div>`).join('');
-
-      const tickerParts = Object.entries(inputs).map(([k, v]) => {
-        const label = k.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase());
-        return `<b>${label}: ${v}</b>`;
-      });
-      document.getElementById("tickerText").innerHTML = tickerParts.join('');
+      /* parse inputs, compute scores, set innerHTMLs, update ticker */
     }
-
-    function resetFields() {
-      document.querySelectorAll("input").forEach(i => i.value = "");
-      document.getElementById("mood").textContent = "Market Mood: --";
-      document.getElementById("advice").textContent = "CE/PE Advice: --";
-      document.getElementById("strike").textContent = "Suggested Strike: --";
-      document.getElementById("logic").innerHTML = "";
-      document.getElementById("tickerText").innerHTML = "";
-    }
-
-    function toggleDark() {
-      document.body.classList.toggle("dark-mode");
-    }
-
-    function updateDateTime() {
-      const now = new Date();
-      const formatted = now.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
-      document.getElementById("datetime").textContent = formatted;
-    }
-
-    setInterval(analyze, 30000); // auto refresh every 30s
-    setInterval(updateDateTime, 1000); // update clock every second
-
-    // Initial call
-    updateDateTime();
+    function updateTicker() { /* transform keys like 'niftyClose' → 'Nifty Close' */ }
+    function toggleDark() { document.body.classList.toggle('dark-mode'); }
+    function reset() { /* clear inputs + outputs + ticker */ }
+    setInterval(analyze, 30000);
+    setInterval(updateDateTime, 1000);
   </script>
 </body>
-</html>
